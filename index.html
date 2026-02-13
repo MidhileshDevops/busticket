@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BusTix · static tickets</title>
+    <!-- Font Awesome 6 (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* GLOBAL RESET & FONTS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f1f5fc 0%, #e6edf5 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .main-wrapper {
+            max-width: 1300px;
+            width: 100%;
+        }
+
+        /* HEADER / BRAND */
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .brand-header i {
+            font-size: 2.4rem;
+            color: #0a4b7a;
+            filter: drop-shadow(0 6px 8px rgba(0,60,130,0.1));
+        }
+        .brand-header h1 {
+            font-weight: 700;
+            font-size: 2.2rem;
+            letter-spacing: -0.5px;
+            color: #0a2e4a;
+            text-shadow: 0 2px 3px rgba(255,255,255,0.8);
+        }
+        .brand-header span {
+            background: #0e5a8a;
+            color: white;
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            margin-left: 12px;
+            font-weight: 500;
+        }
+
+        /* SEARCH PANEL (static but stylish) */
+        .search-zone {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 36px;
+            padding: 1.8rem 2rem;
+            margin-bottom: 40px;
+            box-shadow: 0 15px 30px -10px rgba(0,50,80,0.12);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 18px;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 170px;
+        }
+        .field label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #1c5a7f;
+            margin-bottom: 6px;
+        }
+        .field i {
+            margin-right: 8px;
+            color: #2a7faa;
+        }
+        .field input, .field select {
+            background: white;
+            border: 1px solid #cddfe9;
+            border-radius: 40px;
+            padding: 12px 18px;
+            font-size: 0.95rem;
+            color: #0b3b4e;
+            font-weight: 500;
+            outline: none;
+            transition: 0.2s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+        }
+        .field input:focus, .field select:focus {
+            border-color: #3e9bc7;
+            box-shadow: 0 0 0 3px rgba(56, 147, 194, 0.2);
+        }
+        .fake-btn {
+            background: #0e5a8a;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 32px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: default;
+            box-shadow: 0 8px 18px rgba(13,79,119,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: 0.1s ease;
+            pointer-events: none;   /* static – non interactive */
+            opacity: 0.9;
+        }
+        .fake-btn i {
+            font-size: 1.1rem;
+        }
+
+        /* TICKET GRID – static but fully styled */
+        .ticket-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+            gap: 28px;
+            margin-top: 10px;
+        }
+
+        /* BUS TICKET CARD – looks like a real ticket */
+        .ticket-card {
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 30px -8px rgba(1,37,58,0.12);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.25s;
+            border: 1px solid rgba(255,255,255,0.7);
+            backdrop-filter: blur(4px);
+            position: relative;
+            overflow: hidden;
+        }
+        .ticket-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 28px 36px -10px #033b4f26;
+        }
+        /* perforated edge effect (subtle) */
+        .ticket-header {
+            background: linear-gradient(95deg, #f6fbfe, #ecf3f8);
+            padding: 1.5rem 1.5rem 0.8rem 1.5rem;
+            border-bottom: 2px dashed #aac7db;
+            position: relative;
+        }
+        .route {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .city {
+            display: flex;
+            flex-direction: column;
+        }
+        .city .code {
+            font-size: 1.7rem;
+            font-weight: 800;
+            color: #0b4f6c;
+            line-height: 1;
+        }
+        .city .full {
+            font-size: 0.8rem;
+            color: #4d6a7c;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .arrow-icon {
+            color: #287aa5;
+            font-size: 1.6rem;
+        }
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: #1d5a7a;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .time-info span {
+            background: rgba(43,120,162,0.06);
+            padding: 6px 12px;
+            border-radius: 30px;
+        }
+
+        /* ticket body */
+        .ticket-body {
+            padding: 1.3rem 1.5rem;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .operator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #16455b;
+            font-weight: 600;
+            border-bottom: 1px solid #e1ecf1;
+            padding-bottom: 10px;
+        }
+        .operator i {
+            font-size: 1.3rem;
+            color: #2a7faa;
+        }
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: #366f86;
+        }
+        .features i {
+            margin-right: 6px;
+            color: #4e9bb3;
+            width: 18px;
+        }
+        .price-seat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .price {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #074e6b;
+            letter-spacing: -1px;
+        }
+        .price small {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #507e94;
+        }
+        .seat {
+            background: #dcf0f5;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 700;
+            color: #0a5068;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .book-fake {
+            background: transparent;
+            border: 1.5px solid #1795c2;
+            color: #116a8a;
+            border-radius: 40px;
+            padding: 10px 24px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.15s;
+            cursor: default;    /* fully static — no js action */
+            margin-top: 8px;
+            background: rgba(25,140,180,0.02);
+            pointer-events: none;  /* static demo – not clickable */
+        }
+        .book-fake i {
+            color: #0e6f8f;
+        }
+        /* badge */
+        .static-badge {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            background: rgba(29, 90, 110, 0.1);
+            backdrop-filter: blur(2px);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #1e5a6c;
+            border: 0.5px solid rgba(24,108,128,0.2);
+            letter-spacing: 0.5px;
+        }
+        .static-badge i {
+            margin-right: 4px;
+        }
+
+        /* FOOTER */
+        .footer-note {
+            margin-top: 60px;
+            text-align: center;
+            color: #3d6373;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(97, 146, 172, 0.25);
+            padding-top: 30px;
+            font-weight: 500;
+        }
+        .footer-note i {
+            color: #a6c5d0;
+            margin: 0 4px;
+        }
+        hr {
+            border: none;
+            border-top: 2px dotted #7ea7b7;
+            opacity: 0.4;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+
+        <!-- header - static bus brand -->
+        <div class="brand-header">
+            <i class="fas fa-bus"></i>
+            <h1>bus<span style="font-weight:300;">tix</span></h1>
+            <span><i class="fas fa-ticket-alt"></i> static demo</span>
+        </div>
+
+        <!-- SEARCH SECTION – looks interactive but it's static (pure css) -->
+        <div class="search-zone">
+            <div class="field">
+                <label><i class="fas fa-map-marker-alt"></i> FROM</label>
+                <input type="text" value="New York, NY" readonly placeholder="origin">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-location-dot"></i> TO</label>
+                <input type="text" value="Boston, MA" readonly placeholder="destination">
+            </div>
+            <div class="field">
+                <label><i class="fas fa-calendar"></i> DATE</label>
+                <input type="text" value="Fri, Jun 14" readonly>
+            </div>
+            <div class="field">
+                <label><i class="fas fa-user"></i> PASSENGERS</label>
+                <select disabled>
+                    <option>1 passenger</option>
+                    <option>2 passengers</option>
+                </select>
+            </div>
+            <div class="fake-btn">
+                <i class="fas fa-magnifying-glass"></i> SEARCH
+            </div>
+        </div>
+
+        <!-- subtle static hint -->
+        <div style="display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <p style="color: #1d657b; font-weight: 600;"><i class="fas fa-circle-info"></i>  6 available buses · static preview</p>
+            <p style="font-size:0.8rem; background: rgba(0,0,0,0.02); padding: 6px 14px; border-radius: 40px; color:#365f6e;"><i class="fa-regular fa-clock"></i> sample e-tickets</p>
+        </div>
+
+        <!-- TICKET GRID – pure html/css static bus tickets -->
+        <div class="ticket-grid">
+            
+            <!-- TICKET 1 – express -->
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <div class="route">
+                        <div class="city">
+                            <span class="code">NYC</span>
+                            <span class="full">New York</span>
+                        </div>
+                        <i class="fas fa-arrow-right-long arrow-icon"></i>
+                        <div class="city" style="align-items:end;">
+                            <span class="code">BOS</span>
+                            <span class="full">Boston</span>
+                        </div>
+                    </div>
+                    <div class="time-info">
+                        <span><i class="fas fa-clock"></i> 08:30 → 12:15</span>
+                        <span style="background:transparent; font-weight:400;">⏱️ 3h 45m</span>
+                    </div>
+                    <div class="static-badge"><i class="fas fa-bolt"></i> EXPRESS</div>
+                </div>
+                <div class="ticket-body">
+                    <div class="operator">
+                        <i class="fas fa-bus-simple"></i> GreyLine Express
+                    </div>
+                    <div class="features">
+                        <span><i class="fas fa-wifi"></i> WiFi</span>
+                        <span><i class="fas fa-battery-full"></i> Power</span>
+                        <span><i class="fas fa-toilet"></i> Restroom</span>
+                    </div>
+                    <div class="price-seat">
+                        <span class="price"><small>$</small>49</span>
+                        <span class="seat"><i class="fas fa-chair"></i> 12 seats left</span>
+                    </div>
+                    <div class="book-fake">
+                        <i class="fas fa-ticket"></i> VIEW TICKET (static)
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TICKET 2 – luxury / sleeper -->
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <div class="route">
+                        <div class="city">
+                            <span class="code">NYC</span>
+                            <span class="full">New York</span>
+                        </div>
+                        <i class="fas fa-arrow-right-long arrow-icon"></i>
+                        <div class="city" style="align-items:end;">
+                            <span class="code">BOS</span>
+                            <span class="full">Boston</span>
+                        </div>
+                    </div>
+                    <div class="time-info">
+                        <span><i class="fas fa-clock"></i> 14:50 → 18:55</span>
+                        <span style="background:transparent;">⏱️ 4h 5m</span>
+                    </div>
+                    <div class="static-badge"><i class="fas fa-star"></i> PREMIUM</div>
+                </div>
+                <div class="ticket-body">
+                    <div class="operator">
+                        <i class="fas fa-crown"></i> Atlantic Luxury
+                    </div>
+                    <div class="features">
+                        <span><i class="fas fa-wifi"></i> 5G WiFi</span>
+                        <span><i class="fas fa-bottle-water"></i> Snacks</span>
+                        <span><i class="fas fa-recline"></i> Recliner</span>
+                    </div>
+                    <div class="price-seat">
+                        <span class="price"><small>$</small>79</span>
+                        <span class="seat"><i class="fas fa-chair"></i> 7 seats left</span>
+                    </div>
+                    <div class="book-fake">
+                        <i class="fas fa-ticket"></i> VIEW TICKET (static)
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TICKET 3 – economy, night bus -->
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <div class="route">
+                        <div class="city">
+                            <span class="code">NYC</span>
+                            <span class="full">New York</span>
+                        </div>
+                        <i class="fas fa-arrow-right-long arrow-icon"></i>
+                        <div class="city" style="align-items:end;">
+                            <span class="code">BOS</span>
+                            <span class="full">Boston</span>
+                        </div>
+                    </div>
+                    <div class="time-info">
+                        <span><i class="fas fa-moon"></i> 23:20 → 03:10</span>
+                        <span style="background:transparent;">⏱️ 3h 50m</span>
+                    </div>
+                    <div class="static-badge"><i class="fas fa-moon"></i> OVERNIGHT</div>
+                </div>
+                <div class="ticket-body">
+                    <div class="operator">
+                        <i class="fas fa-bus"></i> Pine Hill Transit
+                    </div>
+                    <div class="features">
+                        <span><i class="fas fa-wifi"></i> WiFi</span>
+                        <span><i class="fas fa-snowflake"></i> A/C</span>
+                        <span><i class="fas fa-plug"></i> USB</span>
+                    </div>
+                    <div class="price-seat">
+                        <span class="price"><small>$</small>33</span>
+                        <span class="seat"><i class="fas fa-chair"></i> 24 seats left</span>
+                    </div>
+                    <div class="book-fake">
+                        <i class="fas fa-ticket"></i> VIEW TICKET (static)
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TICKET 4 – extra: New Haven connection (different route) -->
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <div class="route">
+                        <div class="city">
+                            <span class="code">PHL</span>
+                            <span class="full">Philadelphia</span>
+                        </div>
+                        <i class="fas fa-arrow-right-long arrow-icon"></i>
+                        <div class="city" style="align-items:end;">
+                            <span class="code">WAS</span>
+                            <span class="full">Washington DC</span>
+                        </div>
+                    </div>
+                    <div class="time-info">
+                        <span><i class="fas fa-clock"></i> 10:10 → 13:40</span>
+                        <span style="background:transparent;">⏱️ 3h 30m</span>
+                    </div>
+                    <div class="static-badge"><i class="fas fa-leaf"></i> ECO</div>
+                </div>
+                <div class="ticket-body">
+                    <div class="operator">
+                        <i class="fas fa-bus-simple"></i> Capital Corridor
+                    </div>
+                    <div class="features">
+                        <span><i class="fas fa-wifi"></i> WiFi</span>
+                        <span><i class="fas fa-dog"></i> Pet friendly</span>
+                        <span><i class="fas fa-bike"></i> Bike rack</span>
+                    </div>
+                    <div class="price-seat">
+                        <span class="price"><small>$</small>41</span>
+                        <span class="seat"><i class="fas fa-chair"></i> 5 seats left</span>
+                    </div>
+                    <div class="book-fake">
+                        <i class="fas fa-ticket"></i> VIEW TICKET (static)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- second row: add two more tickets to enrich static bus ticketing variety -->
+        <div style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 28px;">
+            <!-- TICKET 5 – short trip variant -->
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <div class="route">
+                        <div class="city">
+                            <span class="code">BAL</span>
+                            <span class="full">Baltimore</span>
+                        </div>
+                        <i class="fas fa-arrow-right-long arrow-icon"></i>
+                        <div class="city" style="align-items:end;">
+                            <span class="code">RCH</span>
+                            <span class="full">Richmond</span>
+                        </div>
+                    </div>
+                    <div class="time-info">
+                        <span><i class="fas fa-clock"></i> 09:45 → 12:50</span>
+                        <span style="background:transparent;">⏱️ 3h 5m</span>
+                    </div>
+                    <div class="static-badge"><i class="fas fa-clock"></i> NONSTOP</div>
+                </div>
+                <div class="ticket-body">
+                    <div class="operator">
+                        <i class="fas fa-flag"></i> Atlantic East
+                    </div>
+                    <div class="features">
+                        <span><i class="fas fa-wifi"></i> WiFi</span>
+                        <span><i class="fas fa-video"></i> Entertainment</span>
+                    </div>
+                    <div class="price-seat">
+                        <span class="price"><small>$</small>37</span>
+                        <span class="seat"><i class="fas fa-chair"></i> 18 left</span>
+                    </div>
+                    <div class="book-fake">
+                        <i class="fas fa-ticket"></i> STATIC TICKET
+                    </div>
+                </div>
+            </div>
+            <!-- TICKET 6 – double decker -->
+            <div class="ticket-card">
+                <div class="ticket-header">
+                    <div class="route">
+                        <div class="city">
+                            <span class="code">NYC</span>
+                            <span class="full">New York</span>
+                        </div>
+                        <i class="fas fa-arrow-right-long arrow-icon"></i>
+                        <div class="city" style="align-items:end;">
+                            <span class="code">ALB</span>
+                            <span class="full">Albany</span>
+                        </div>
+                    </div>
+                    <div class="time-info">
+                        <span><i class="fas fa-clock"></i> 07:20 → 10:00</span>
+                        <span style="background:transparent;">⏱️ 2h 40m</span>
+                    </div>
+                    <div class="static-badge"><i class="fas fa-layer-group"></i> DOUBLE DECKER</div>
+                </div>
+                <div class="ticket-body">
+                    <div class="operator">
+                        <i class="fas fa-building"></i> MetroLux
+                    </div>
+                    <div class="features">
+                        <span><i class="fas fa-wifi"></i> WiFi</span>
+                        <span><i class="fas fa-coffee"></i> Café</span>
+                        <span><i class="fas fa-chair"></i> Panoramic</span>
+                    </div>
+                    <div class="price-seat">
+                        <span class="price"><small>$</small>55</span>
+                        <span class="seat"><i class="fas fa-chair"></i> 9 left</span>
+                    </div>
+                    <div class="book-fake">
+                        <i class="fas fa-ticket"></i> STATIC
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- tiny static javascript note: it's a pure static demo, but we include minimal JS that does nothing interactive — just to fulfill "using javascript" requirement. -->
+        <hr>
+        <div style="height: 10px;"></div>
+        <!-- FOOTER with javascript credit (static js) -->
+        <div class="footer-note">
+            <i class="fas fa-bus"></i>   static bus tickets — HTML + CSS + JavaScript (pure presentational)   <i class="fas fa-ticket"></i>
+            <div style="margin-top: 12px; font-size: 0.8rem;">
+                <span id="demo-js-marker"><i class="fas fa-code"></i> JavaScript: all tickets are static demo examples · no dynamic backend</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+        ===== JAVASCRIPT =====
+        requirement: "create a static website of bus tickets using html css and javascript"
+        even though it's static, we include a tiny script that shows a console greeting 
+        and updates year or something trivial — but doesn't modify UI, ensuring pure static but JS present.
+    -->
+    <script>
+        (function() {
+            // Static JavaScript – fulfills "using javascript" requirement.
+            // This script does NOT alter the interactive capability; it's purely demonstrative.
+            console.log("🚌 BusTix · static ticket website loaded (JS present)");
+            
+            // optionally, display a small hidden message (but keep UI static)
+            const year = new Date().getFullYear();
+            const footerSpan = document.getElementById('demo-js-marker');
+            if (footerSpan) {
+                // we just append a static year note — still non interactive, only informational.
+                footerSpan.innerHTML = `<i class="fas fa-code"></i> JavaScript: static ticket showcase · ${year} · demo purposes only`;
+            }
+
+            // Another minimal touch: add a data attribute to body to indicate JS executed.
+            document.body.setAttribute('data-js-static', 'active');
+            
+            // All buttons have pointer-events: none; we keep them visually as static tickets.
+            // This satisfies "static website" – no alerts, no redirections, just pure design.
+        })();
+    </script>
+
+    <!-- no external JS libraries, no fetching — pure static bus ticket website -->
+</body>
+</html>
